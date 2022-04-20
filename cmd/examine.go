@@ -56,7 +56,9 @@ var examineCmd = &cobra.Command{
 
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
-		enc.Encode(packages)
+		if err := enc.Encode(packages); err != nil {
+			log.Fatal(err)
+		}
 
 	}}
 
