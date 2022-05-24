@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"justcompile/licenses/pkg/examine"
+	"justcompile/licenses/pkg/parser"
 	"log"
 	"os"
 	"path"
@@ -33,7 +34,7 @@ var examineCmd = &cobra.Command{
 			r = f
 		}
 
-		ctx := context.WithValue(context.Background(), "workingdir", workingDir)
+		ctx := context.WithValue(context.Background(), parser.ContextCurrentWorkingDir, workingDir)
 
 		pkgMgr, _ := cmd.Flags().GetString("lang")
 

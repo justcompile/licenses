@@ -87,7 +87,7 @@ func packageFromPipRequirement(line string) (*Package, error) {
 func tryOpenReferencedPipFile(ctx context.Context, line string) (io.Reader, error) {
 	fileName := strings.TrimLeft(line, "-r")
 
-	cd := ctx.Value("workingdir")
+	cd := ctx.Value(ContextCurrentWorkingDir)
 
 	return os.Open(fmt.Sprintf("%s/%s", cd, strings.TrimSpace(fileName)))
 }
