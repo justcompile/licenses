@@ -2,6 +2,12 @@ package parser
 
 import "strings"
 
+type currentWorkingDir string
+
+const (
+	ContextCurrentWorkingDir currentWorkingDir = "workingdir"
+)
+
 type Package struct {
 	Name    string `json:"name"`
 	Version string `json:"version"`

@@ -1,14 +1,14 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
-	"fmt"
 	"io"
-	"justcompile/licenses/pkg/lookup"
+	"justcompile/licenses/pkg/examine"
 	"justcompile/licenses/pkg/parser"
 	"log"
 	"os"
-	"sync"
+	"path"
 
 	"github.com/spf13/cobra"
 )
@@ -17,11 +17,15 @@ var examineCmd = &cobra.Command{
 	Use:  "examine [SOURCE]",
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		workingDir := "."
+
 		source := args[0]
 		var r io.Reader
 		if source == "-" {
 			r = os.Stdin
 		} else {
+			workingDir = path.Dir(source)
+
 			f, err := os.Open(source)
 			if err != nil {
 				log.Fatalf("error reading file %s: %s", source, err.Error())
@@ -30,29 +34,19 @@ var examineCmd = &cobra.Command{
 			r = f
 		}
 
-		packages, err := parser.Parse(r)
+		ctx := context.WithValue(context.Background(), parser.ContextCurrentWorkingDir, workingDir)
+
+		pkgMgr, _ := cmd.Flags().GetString("lang")
+
+		examiner, err := examine.New(pkgMgr)
 		if err != nil {
-			log.Fatalf("unable to extract packages: %s", err.Error())
+			log.Fatal(err)
 		}
 
-		var wg sync.WaitGroup
-		wg.Add(len(packages))
-
-		for _, p := range packages {
-			go func(pkg *parser.Package) {
-				defer wg.Done()
-
-				license, err := lookup.Search(pkg.Name)
-				if err != nil {
-					fmt.Println(err)
-					return
-				}
-
-				pkg.License = license
-			}(p)
+		packages, err := examiner.Process(ctx, r)
+		if err != nil {
+			log.Fatal(err)
 		}
-
-		wg.Wait()
 
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
@@ -64,4 +58,5 @@ var examineCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(examineCmd)
+	examineCmd.Flags().String("lang", "py", "denotes the package manager for parsing")
 }
