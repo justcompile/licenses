@@ -3,15 +3,17 @@ package parser
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"strings"
 
 	"github.com/pelletier/go-toml"
 )
 
-func Parse(r io.Reader) ([]*Package, error) {
+func Python(ctx context.Context, r io.Reader) ([]*Package, error) {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
@@ -24,10 +26,10 @@ func Parse(r io.Reader) ([]*Package, error) {
 		return nil, nil
 	}
 
-	return parsePip(bytes.NewReader(data))
+	return parsePip(ctx, bytes.NewReader(data))
 }
 
-func parsePip(r io.Reader) ([]*Package, error) {
+func parsePip(ctx context.Context, r io.Reader) ([]*Package, error) {
 	scanner := bufio.NewScanner(r)
 
 	lines := make([]string, 0)
@@ -43,6 +45,21 @@ func parsePip(r io.Reader) ([]*Package, error) {
 	packages := make([]*Package, 0)
 
 	for _, line := range lines {
+		if strings.HasPrefix(line, "-r") {
+			refFile, err := tryOpenReferencedPipFile(ctx, line)
+			if err != nil {
+				return nil, err
+			}
+
+			refPackages, refErr := parsePip(ctx, refFile)
+			if refErr != nil {
+				return nil, refErr
+			}
+
+			packages = append(packages, refPackages...)
+			continue
+		}
+
 		if p, err := packageFromPipRequirement(line); err == nil {
 			packages = append(packages, p)
 		} else {
@@ -65,4 +82,12 @@ func packageFromPipRequirement(line string) (*Package, error) {
 	}
 
 	return p.Sanitise()
+}
+
+func tryOpenReferencedPipFile(ctx context.Context, line string) (io.Reader, error) {
+	fileName := strings.TrimLeft(line, "-r")
+
+	cd := ctx.Value("workingdir")
+
+	return os.Open(fmt.Sprintf("%s/%s", cd, strings.TrimSpace(fileName)))
 }
