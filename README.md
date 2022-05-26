@@ -3,12 +3,31 @@
 A tool for inspecting application dependencies requirements/packages/modules in order to extract their license
 
 ## Usage
-Currently, only the Pip format is supported 
+```
+license examine [SOURCE] [flags]
 
-To examine the packages from a requirements file:
+[SOURCE] can be a file path or '-' to read from stdin 
+```
 
-`license examine --lang=py requirements.txt`
+The following languages are supported:
 
-Or, to examine the packages directly from pip
+### Python 
+`--lang=py or --lang=python`
 
-`pip freeze | license examine --lang=py -`
+Supporting Pip formatting only currently
+```bash
+# To examine the packages from a requirements file:
+license examine requirements.txt --lang=py 
+
+# to examine the packages directly from pip
+pip freeze | license examine - --lang=py
+```
+
+### Golang
+`--lang=go or --lang=golang`
+
+Supporting go modules 
+
+```bash
+license examine go.mod --lang=go
+```

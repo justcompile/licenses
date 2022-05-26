@@ -35,8 +35,12 @@ func (e *Examiner) Process(ctx context.Context, r io.Reader) ([]*parser.Package,
 
 			license, err := e.getLicense(ctx, pkg.Name)
 			if err != nil {
-				if pyErr, ok := err.(*gatherer.PythonError); ok {
-					pkg.License = pyErr.URL
+				switch licError := err.(type) {
+				case *gatherer.RepoNotFound:
+					pkg.License = licError.URL
+				case *gatherer.LicenseFound:
+					pkg.License = licError.License
+					return
 				}
 
 				os.Stderr.WriteString(err.Error() + "\n")
@@ -69,6 +73,9 @@ func New(lang string) (*Examiner, error) {
 	case "py", "python":
 		pkgParser = parser.Python
 		licenseGatherer = gatherer.Pypi
+	case "go", "golang":
+		pkgParser = parser.Golang
+		licenseGatherer = gatherer.Golang
 	default:
 		return nil, fmt.Errorf("%s language is currently unsupported", lang)
 	}
