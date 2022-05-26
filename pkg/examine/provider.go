@@ -67,7 +67,7 @@ func (e *Examiner) getLicense(ctx context.Context, packageName string) (string, 
 
 func New(lang string) (*Examiner, error) {
 	var pkgParser PackageParser
-	var licenseGatherer LicenseGatherer = gatherer.NoOp
+	var licenseGatherer LicenseGatherer
 
 	switch lang {
 	case "py", "python":

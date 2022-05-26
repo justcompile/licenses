@@ -10,7 +10,9 @@ import (
 
 func Golang(ctx context.Context, r io.Reader) ([]*Package, error) {
 	buf := new(bytes.Buffer)
-	buf.ReadFrom(r)
+	if _, readErr := buf.ReadFrom(r); readErr != nil {
+		return nil, readErr
+	}
 
 	f, err := modfile.Parse("", buf.Bytes(), nil)
 	if err != nil {
